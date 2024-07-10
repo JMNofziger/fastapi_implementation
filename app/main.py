@@ -3,7 +3,15 @@ from fastapi import FastAPI, Response, status, HTTPException
 from fastapi.params import Body
 from pydantic import BaseModel
 from random import randrange
+from dotenv import load_dotenv
+from os import environ
+from psycopg2.extras import RealDictCursor
+import psycopg2
+import logging
 
+logger = logging.getLogger("uvicorn.error")
+logger.setLevel(logging.DEBUG)
+load_dotenv()
 app = FastAPI()
 
 
@@ -11,8 +19,21 @@ class Post(BaseModel):
     title: str
     content: str
     published: bool = True
-    rating: Optional[int] = None
 
+
+try:
+    db_pass = environ.get("POSTGRESQL_DATABASE_PASSWORD")
+    conn = psycopg2.connect(
+        host="localhost",
+        database="fastapiFCC",
+        user="postgres",
+        password=db_pass,
+        cursor_factory=RealDictCursor,
+    )
+    cursor = conn.cursor()
+    logger.debug("Database connection was successful!")
+except Exception as err:
+    logger.debug(f"attempted connection to db failed: {err}")
 
 my_posts = [
     {"title": "title of post 1", "content": "content of post 1", "id": 1},
@@ -45,7 +66,7 @@ def get_posts():
 @app.post("/posts", status_code=status.HTTP_201_CREATED)
 def create_posts(post: Post):
     post_dict = post.model_dump()
-    print(post_dict)
+    logger.debug(post_dict)
     post_dict["id"] = randrange(0, 1000000)
     my_posts.append(post_dict)
     return {"data": post_dict}
