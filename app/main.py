@@ -1,5 +1,5 @@
 from typing import Optional
-from fastapi import FastAPI, Response, status, HTTPException
+from fastapi import FastAPI, Response, status, HTTPException, Depends
 from fastapi.params import Body
 from pydantic import BaseModel
 from random import randrange
@@ -9,10 +9,17 @@ from psycopg2.extras import RealDictCursor
 import psycopg2
 import logging
 import time
+import models
+from sqlalchemy.orm import Session
+from database import engine, get_db
 
 logger = logging.getLogger("uvicorn.error")
 logger.setLevel(logging.DEBUG)
 load_dotenv()
+
+# initialize/create all the defined models for tables
+models.Base.metadata.create_all(bind=engine)
+# initialize FastAPI app
 app = FastAPI()
 
 
@@ -44,6 +51,12 @@ while True:
 @app.get("/")
 def root():
     return {"message": "Hello World"}
+
+
+# test sqlalchemy enabled connection to database
+@app.get("/sqlalchemy")
+def test_posts(db: Session = Depends(get_db)):
+    return {"status": "success"}
 
 
 @app.get("/posts")
