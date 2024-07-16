@@ -8,6 +8,7 @@ from os import environ
 from psycopg2.extras import RealDictCursor
 import psycopg2
 import logging
+import time
 
 logger = logging.getLogger("uvicorn.error")
 logger.setLevel(logging.DEBUG)
@@ -21,36 +22,23 @@ class Post(BaseModel):
     published: bool = True
 
 
-try:
-    db_pass = environ.get("POSTGRESQL_DATABASE_PASSWORD")
-    conn = psycopg2.connect(
-        host="localhost",
-        database="fastapiFCC",
-        user="postgres",
-        password=db_pass,
-        cursor_factory=RealDictCursor,
-    )
-    cursor = conn.cursor()
-    logger.debug("Database connection was successful!")
-except Exception as err:
-    logger.debug(f"attempted connection to db failed: {err}")
-
-my_posts = [
-    {"title": "title of post 1", "content": "content of post 1", "id": 1},
-    {"title": "favorite foods", "content": "I like pizza", "id": 2},
-]
-
-
-def find_post(id):
-    for p in my_posts:
-        if p["id"] == id:
-            return p
-
-
-def find_index_post(id):
-    for i, p in enumerate(my_posts):
-        if p["id"] == id:
-            return i
+# connect to database
+while True:
+    try:
+        db_pass = environ.get("POSTGRESQL_DATABASE_PASSWORD")
+        conn = psycopg2.connect(
+            host="localhost",
+            database="fastapiFCC",
+            user="postgres",
+            password=db_pass,
+            cursor_factory=RealDictCursor,
+        )
+        cursor = conn.cursor()
+        logger.debug("Database connection was successful!")
+        break
+    except Exception as err:
+        logger.debug(f"attempted connection to db failed: {err}")
+        time.sleep(2)
 
 
 @app.get("/")
@@ -60,58 +48,61 @@ def root():
 
 @app.get("/posts")
 def get_posts():
-    return {"data": my_posts}
+    cursor.execute("""SELECT * FROM posts""")
+    posts = cursor.fetchall()
+    logger.debug("getting all posts")
+    return {"data": posts}
 
 
 @app.post("/posts", status_code=status.HTTP_201_CREATED)
 def create_posts(post: Post):
-    post_dict = post.model_dump()
-    logger.debug(post_dict)
-    post_dict["id"] = randrange(0, 1000000)
-    my_posts.append(post_dict)
-    return {"data": post_dict}
+    cursor.execute(
+        """INSERT INTO posts (title, content, published) VALUES (%s, %s, %s) RETURNING * """,
+        (post.title, post.content, post.published),
+    )
+    new_post = cursor.fetchone()
+    conn.commit()
+    logger.debug(new_post)
+    return {"data": new_post}
 
 
 @app.get("/posts/{id}")
 def get_post(id: int):
-
-    post = find_post(id)
-    if not post:
+    cursor.execute("""SELECT * FROM posts WHERE id = %s """, str(id))
+    returned_post = cursor.fetchone()
+    if not returned_post:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"post with id: {id} was not found",
+            detail=f"post with id {id} was not found",
         )
-    return {"post_detail": post}
+    return {"post_detail": returned_post}
 
 
 @app.delete("/posts/{id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_post(id: int):
-    # deleting post
-    # find the index in the array that has required ID
-    # my_posts.pop(index)
-    index = find_index_post(id)
-
+    cursor.execute("""DELETE FROM posts WHERE id = %s RETURNING *""", str(id))
+    index = cursor.fetchone()
     if index == None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"post with id: {id} does not exist",
+            detail=f"post with id {id} does not exist",
         )
-
-    my_posts.pop(index)
+    conn.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @app.put("/posts/{id}")
 def update_post(id: int, post: Post):
-    index = find_index_post(id)
+    cursor.execute(
+        """UPDATE posts SET title = %s, content = %s, published = %s WHERE id = %s RETURNING * """,
+        (post.title, post.content, post.published, str(id)),
+    )
+    updated_post = cursor.fetchone()
 
-    if index == None:
+    if updated_post == None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"post with id: {id} does not exist",
         )
 
-    post_dict = post.model_dump()
-    post_dict["id"] = id
-    my_posts[index] = post_dict
-    return {"data": post_dict}
+    return {"data": updated_post}
