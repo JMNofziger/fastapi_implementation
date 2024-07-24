@@ -1,5 +1,5 @@
 # defining the Pydantic schema models for request/response validation/verification
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from datetime import datetime
 
 
@@ -21,3 +21,15 @@ class Post(PostBase):
 
     class Config:
         from_attributes = True
+
+
+# user models
+class UserCreate(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class UserOut(BaseModel):
+    id: int
+    email: EmailStr
+    created_at: datetime

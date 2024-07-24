@@ -10,6 +10,7 @@ import logging
 import time
 import models
 import schemas
+import utils
 from sqlalchemy.orm import Session
 from database import engine, get_db
 
@@ -125,3 +126,28 @@ def update_post(id: int, post: schemas.PostCreate, db: Session = Depends(get_db)
     # show updated values in log
     logger.debug(post_to_update)
     return post_query.first()
+
+
+@app.post("/users", status_code=status.HTTP_201_CREATED, response_model=schemas.UserOut)
+def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+    # hash the password from user input with bycrypt
+    hashed_password = utils.hash(user.password)
+    user.password = hashed_password
+    new_user = models.User(**user.model_dump())
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return new_user
+
+
+@app.get("/users/{id}", response_model=schemas.UserOut)
+def get_user(id: int, db: Session = Depends(get_db)):
+    logger.debug(id)
+    user = db.query(models.User).filter(models.User.id == id).first()
+    logger.debug(user)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User with id {id} not exist.",
+        )
+    return user

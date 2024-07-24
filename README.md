@@ -6,7 +6,7 @@ uvicorn main:app --log-level debug --reload
 
 # Tutorial link
 https://www.youtube.com/watch?v=0sOvCWFmrtA&t=8765s
-4:49:07
+6:04:07
 
 # Differences between the Pydantic and SqlAlchemy Models
 
@@ -38,3 +38,8 @@ Even though FastAPI doesn't directly manage the creation of the Session object, 
 
 The database session is opened and closed per operation as that is most efficient in this circumstance. Due to this the database parameter includes a definition as a Session which calls a function as it's dependency. The function serves to open and close the database connection as needed.
 
+# Creating user functionality - handling user information
+
+1. Create account for user
+
+Need to create a table in db for user information - this will be done by defining a SqlAlchemy model with all the User model information

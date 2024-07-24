@@ -1,0 +1,9 @@
+# utility functions
+from passlib.context import CryptContext
+
+# declaring default hashing algorithm
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+
+def hash(password: str):
+    return pwd_context.hash(password)
