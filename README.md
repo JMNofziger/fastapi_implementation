@@ -5,7 +5,7 @@ uvicorn main:app --log-level debug --reload
 ```
 
 # Tutorial link
-https://www.youtube.com/watch?v=0sOvCWFmrtA&t=8765s
+https://www.youtube.com/watch?v=0sOvCWFmrtA
 6:04:07
 
 # Differences between the Pydantic and SqlAlchemy Models
@@ -39,7 +39,39 @@ Even though FastAPI doesn't directly manage the creation of the Session object, 
 The database session is opened and closed per operation as that is most efficient in this circumstance. Due to this the database parameter includes a definition as a Session which calls a function as it's dependency. The function serves to open and close the database connection as needed.
 
 # Creating user functionality - handling user information
-
-1. Create account for user
+We'll use bcrypt to securely the sensitive input in our database - the bcrypt cryptographic function is included with the passlib library and wil both hashing and salting passwords which we will store in a new 'users' table of the database
 
 Need to create a table in db for user information - this will be done by defining a SqlAlchemy model with all the User model information
+
+## handling user authentication with tokens
+One way is to store some information in memory or in the database to track whether the user is logged in or logged out
+
+Another way is by using JWT Token based authentication - it's a stateless method for determining authentication; there's nothing in the database or backend that stores information as to whether the user is logged in or logged out. The client stores a token on the frontend which is the manner with which the logged in status is tracked. 
+
+The client makes a request and passes a token along with the request if they have one. If they don't have one, they are prompted to log in. At log in, the client passes their credentials (username and password) and if they're verified the backend signs/creates a JWT Token for the user and passes it back to them.
+
+The client then provides the token along with every request that they make - the backend receives the request and runs a function to confirm that the user-provided token is valid. If valid, the backend processes the user request. 
+
+### What is a JWT Token
+Note: the tokens are NOT encrypted
+The token is made up of three individual pieces:
+1. The header - composed of token metadata describing the algorithm and token type
+2. The payload - composed of whatever data the backend developer has decided to include
+  * Note: the payload is not encrypted so anyone that intercepts the token can decipher the values embeded in the payload. The payload is optional, it can be left empty. Payload should be minimal if used. Common uses include: the user id, the user privilege level/role, token creation time
+3. The 'verify signature' - a combination of three things: the header, the payload, and a secret. The secret is a special password kept on the API backend. The secret should only reside on the API servers and never leave the backend, no one should ever have access to this secret. The secret, payload, and header are input to the alorithm function and processed together to produce a 'signature'. This signature is used to determine whether the token is valid and to prevent token tampering/preserve data integrity. 
+
+### What are verification signatures for?
+To ensure that the authentication token provided hasn't had tampered with - that the user provided token has the same unmodified contents that were originally provided by the backend when it was created
+
+### How do we verify that the user provided credentials at log in match the hashed credentials stored in the database?
+* The database is storing a hashed version of the user credential in the database
+* The user provides a plain text version of their credential at log in 
+* The backend must compare the hashed version of the credential and the plain text version provided by the user logging in - bcrypt is a one-way hash function which means the hashed output cannot be reversed to it's original state; it is NOT encryption
+*to verify a correctly user-provided input matches database password:*
+The plain text provided by the user must simply be run through the same hash function and the output is then compared to the previously hashed output which was stored database. If it matches, the input passwords matched as well and access is granted.
+
+
+
+
+# Notes on errors in log
+Passlib library has an open issue regarding a failure of most current stable version 1.7.4 failing to read the bcrypt version correctly and spitting errors into the logs: https://foss.heptapod.net/python-libs/passlib/-/issues/190
