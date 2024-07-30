@@ -1,6 +1,7 @@
 # defining the Pydantic schema models for request/response validation/verification
 from pydantic import BaseModel, EmailStr
 from datetime import datetime
+from typing import Optional
 
 
 class PostBase(BaseModel):
@@ -38,3 +39,13 @@ class UserOut(BaseModel):
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
+
+
+# login token models
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class TokenData(BaseModel):
+    id: Optional[str] = None
