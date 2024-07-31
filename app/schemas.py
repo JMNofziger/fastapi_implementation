@@ -4,6 +4,23 @@ from datetime import datetime
 from typing import Optional
 
 
+# user models
+class UserCreate(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class UserOut(BaseModel):
+    id: int
+    email: EmailStr
+    created_at: datetime
+
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+
 class PostBase(BaseModel):
     title: str
     content: str
@@ -20,26 +37,10 @@ class Post(PostBase):
     id: int
     created_at: datetime
     owner_id: int
+    owner: UserOut
 
     class Config:
         from_attributes = True
-
-
-# user models
-class UserCreate(BaseModel):
-    email: EmailStr
-    password: str
-
-
-class UserOut(BaseModel):
-    id: int
-    email: EmailStr
-    created_at: datetime
-
-
-class UserLogin(BaseModel):
-    email: EmailStr
-    password: str
 
 
 # login token models

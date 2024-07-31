@@ -1,7 +1,10 @@
 # defining tables as SqlAlchemy models -
 # each model represents a table in our database
 from database import Base
-from sqlalchemy import Column, Integer, String, Boolean, TIMESTAMP, ForeignKey, text
+from sqlalchemy.orm import relationship
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey
+from sqlalchemy.sql.expression import text
+from sqlalchemy.sql.sqltypes import TIMESTAMP
 
 
 class Post(Base):
@@ -17,6 +20,8 @@ class Post(Base):
     owner_id = Column(
         Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
+    # SqlAlchemy.orm magic - relationship creates a property on Post model fetches the 'User' model class
+    owner = relationship("User")
 
 
 class User(Base):
