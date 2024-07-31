@@ -1,5 +1,5 @@
 from fastapi import Response, status, HTTPException, Depends, APIRouter
-from typing import List
+from typing import List, Optional
 from sqlalchemy.orm import Session
 from database import get_db
 from oauth2 import get_current_user
@@ -14,11 +14,21 @@ logger.setLevel(logging.DEBUG)
 
 @router.get("/", response_model=List[schemas.Post])
 def get_posts(
-    db: Session = Depends(get_db), current_user: int = Depends(get_current_user)
+    db: Session = Depends(get_db),
+    current_user: int = Depends(get_current_user),
+    skip: int = 0,
+    limit: int = 10,
+    search: Optional[str] = "",
 ):
     # filter to only return posts which are owned by the requestor
     # posts = db.query(models.Post).filter(models.Post.owner_id == current_user.id).all()
-    posts = db.query(models.Post).filter(models.Post.owner_id == current_user.id).all()
+    posts = (
+        db.query(models.Post)
+        .filter(models.Post.title.contains(search))
+        .limit(limit)
+        .offset(skip)
+        .all()
+    )
     logger.debug("getting all posts")
     return posts
 
