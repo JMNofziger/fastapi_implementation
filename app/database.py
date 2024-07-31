@@ -27,3 +27,22 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+# validate connection to database
+# while True:
+#     try:
+#         db_pass = environ.get("POSTGRESQL_DATABASE_PASSWORD")
+#         conn = psycopg2.connect(
+#             host="localhost",
+#             database="fastapiFCC",
+#             user="postgres",
+#             password=db_pass,
+#             cursor_factory=RealDictCursor,
+#         )
+#         cursor = conn.cursor()
+#         logger.debug("Database connection was successful!")
+#         break
+#     except Exception as err:
+#         logger.debug(f"attempted connection to db failed: {err}")
+#         time.sleep(2)

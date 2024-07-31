@@ -15,7 +15,7 @@ logger.setLevel(logging.DEBUG)
 @router.get("/", response_model=List[schemas.Post])
 def get_posts(
     db: Session = Depends(get_db),
-    current_user: int = Depends(get_current_user),
+    # current_user: int = Depends(get_current_user),
     skip: int = 0,
     limit: int = 10,
     search: Optional[str] = "",
@@ -29,7 +29,6 @@ def get_posts(
         .offset(skip)
         .all()
     )
-    logger.debug("getting all posts")
     return posts
 
 
@@ -39,7 +38,7 @@ def create_posts(
     db: Session = Depends(get_db),
     current_user: int = Depends(get_current_user),
 ):
-    # relate input post to correct model columns
+    # relate input post to correct model columns - add owner_id to post object
     new_post = models.Post(owner_id=current_user.id, **post.model_dump())
     # create entry for database
     db.add(new_post)
@@ -47,9 +46,6 @@ def create_posts(
     db.commit()
     # ask the database for the committed entry and store in 'new_post'
     db.refresh(new_post)
-    logger.debug(new_post.__dict__.items())
-    logger.debug(type(new_post))
-
     return new_post
 
 
@@ -91,7 +87,6 @@ def delete_post(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"You are not authorized to delete post {id}",
         )
-    logger.debug(index.__dict__.items())
     db.delete(index)
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -129,10 +124,6 @@ def update_post(
     post_query.update(post.model_dump())
     # get latest value
     db.refresh(post_to_update)
-    # show updated values in log
-    logger.debug(post_to_update.__dict__.items())
-    # commit change to db
     db.commit()
-    # show updated values in log
     logger.debug(post_to_update)
     return post_query.first()
