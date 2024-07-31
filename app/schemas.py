@@ -19,6 +19,7 @@ class Post(PostBase):
     # extends PostBase defined above
     id: int
     created_at: datetime
+    owner_id: int
 
     class Config:
         from_attributes = True

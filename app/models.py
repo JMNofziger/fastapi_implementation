@@ -1,7 +1,7 @@
-# defining tables as python models -
+# defining tables as SqlAlchemy models -
 # each model represents a table in our database
 from database import Base
-from sqlalchemy import Column, Integer, String, Boolean, TIMESTAMP, text
+from sqlalchemy import Column, Integer, String, Boolean, TIMESTAMP, ForeignKey, text
 
 
 class Post(Base):
@@ -13,6 +13,9 @@ class Post(Base):
     published = Column(Boolean, server_default="TRUE", nullable=False)
     created_at = Column(
         TIMESTAMP(timezone=True), nullable=False, server_default=text("now()")
+    )
+    owner_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
 
 

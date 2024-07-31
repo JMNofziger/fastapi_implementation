@@ -2,7 +2,8 @@ from fastapi import Response, status, HTTPException, Depends, APIRouter
 from typing import List
 from sqlalchemy.orm import Session
 from database import get_db
-import schemas, models, oauth2
+from oauth2 import get_current_user
+import schemas, models
 import logging
 
 # all method paths in this file begin with the prefix "posts"
@@ -12,8 +13,12 @@ logger.setLevel(logging.DEBUG)
 
 
 @router.get("/", response_model=List[schemas.Post])
-def get_posts(db: Session = Depends(get_db)):
-    posts = db.query(models.Post).all()
+def get_posts(
+    db: Session = Depends(get_db), current_user: int = Depends(get_current_user)
+):
+    # filter to only return posts which are owned by the requestor
+    # posts = db.query(models.Post).filter(models.Post.owner_id == current_user.id).all()
+    posts = db.query(models.Post).filter(models.Post.owner_id == current_user.id).all()
     logger.debug("getting all posts")
     return posts
 
@@ -22,11 +27,10 @@ def get_posts(db: Session = Depends(get_db)):
 def create_posts(
     post: schemas.PostCreate,
     db: Session = Depends(get_db),
-    current_user: int = Depends(oauth2.get_current_user),
+    current_user: int = Depends(get_current_user),
 ):
-    logger.debug(current_user)
     # relate input post to correct model columns
-    new_post = models.Post(**post.model_dump())
+    new_post = models.Post(owner_id=current_user.id, **post.model_dump())
     # create entry for database
     db.add(new_post)
     # push entry to database
@@ -40,13 +44,22 @@ def create_posts(
 
 
 @router.get("/{id}", response_model=schemas.Post)
-def get_post(id: int, db: Session = Depends(get_db)):
+def get_post(
+    id: int,
+    db: Session = Depends(get_db),
+    current_user: int = Depends(get_current_user),
+):
     # returned_post = db.query(models.Post).filter(models.Post.id == id).first()
     returned_post = db.query(models.Post).get(id)
     if not returned_post:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"post with id {id} was not found",
+        )
+    elif returned_post.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"You are not authorized to access post {id}",
         )
     return returned_post
 
@@ -55,13 +68,18 @@ def get_post(id: int, db: Session = Depends(get_db)):
 def delete_post(
     id: int,
     db: Session = Depends(get_db),
-    current_user: int = Depends(oauth2.get_current_user),
+    current_user: int = Depends(get_current_user),
 ):
     index = db.query(models.Post).get(id)
     if index == None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"post with id {id} does not exist",
+        )
+    elif index.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"You are not authorized to delete post {id}",
         )
     logger.debug(index.__dict__.items())
     db.delete(index)
@@ -74,7 +92,7 @@ def update_post(
     id: int,
     post: schemas.PostCreate,
     db: Session = Depends(get_db),
-    current_user: int = Depends(oauth2.get_current_user),
+    current_user: int = Depends(get_current_user),
 ):
     # do i need to call for old post - no, I already have id
     # update the db post with the corresponding id
@@ -89,6 +107,11 @@ def update_post(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"post with id: {id} does not exist",
+        )
+    elif post_to_update.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"You are not authorized to modify post {id}",
         )
     # check post value before update
     logger.debug(post_to_update.__dict__.items())

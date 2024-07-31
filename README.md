@@ -6,7 +6,7 @@ uvicorn main:app --log-level debug --reload
 
 # Tutorial link
 https://www.youtube.com/watch?v=0sOvCWFmrtA
-7:10:07
+8:00:00
 
 # Differences between the Pydantic and SqlAlchemy Models
 
@@ -101,3 +101,17 @@ Paths with this user dependency will return errors if the user login/validation 
 
 # Notes on errors in log
 Passlib library has an open issue regarding a failure of most current stable version 1.7.4 failing to read the bcrypt version correctly and spitting errors into the logs: https://foss.heptapod.net/python-libs/passlib/-/issues/190
+
+
+# Adding a foreign key to relate posts rows to a user
+When adding a foreign key column, the new column should have a data type that matches whatever the data type the column in the table corresponding to the data being used as the foreign key
+
+For naming a foreign key consider using this convention: `{currentTableName}_{tableNameWithForeignKey}_fkey`
+
+In our example we are creating a new column named `user_id` in our `posts` table and then linking it to the `id` column in the `users` table. Following the convention mentioned above, our foreign key in the `posts` table would be named `posts_users_fkey` - the foreign key linking logic is then declared on the corresponding local column, in this case the `user_id` column in the local `posts` table
+
+Name of column in local `posts` table to which the foreign key is linked: `user_id`
+Local table with new column to which we link the foreign key: `posts`
+Name of new foreign key link from `user_id` in the `posts`: `posts_users_fkey`
+Table which the foreign key references: `users`
+Column in the `users` table which the foreign key is referencing: `id`
