@@ -6,7 +6,7 @@ uvicorn main:app --log-level debug --reload
 
 # Tutorial link
 https://www.youtube.com/watch?v=0sOvCWFmrtA
-9:00:00
+9:21:00
 
 # Differences between the Pydantic and SqlAlchemy Models
 
@@ -115,3 +115,6 @@ Local table with new column to which we link the foreign key: `posts`
 Name of new foreign key link from `user_id` in the `posts`: `posts_users_fkey`
 Table which the foreign key references: `users`
 Column in the `users` table which the foreign key is referencing: `id`
+
+# Env vars with `pydantic_settings` 
+You can set pydantic to parse environmental variables and ensuring expected typing on those variables. Extend the `BaseSettings` class and within your child class define the environmental variables to parse for - you can then tell your app to search for those env vars from a `dotenv` file by passing the desired file location to the `SettingsConfigDict` object included in the `pydantic_settings` library. If you've configured this correctly you'll simply instantiate an object of your extended class and the application will have access to the environmental variables stored in the dotenv file you indicated in your child class. See `config.py` in this repo for an example. Or read the [`pydantic_settings` documentation](https://docs.pydantic.dev/2.7/concepts/pydantic_settings/#dotenv-env-support) for a thorough explanation.

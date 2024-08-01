@@ -4,12 +4,10 @@ from sqlalchemy.orm import Session
 from database import get_db
 from oauth2 import get_current_user
 import schemas, models
-import logging
+from config import logger
 
 # all method paths in this file begin with the prefix "posts"
 router = APIRouter(prefix="/posts", tags=["Posts"])
-logger = logging.getLogger("uvicorn.error")
-logger.setLevel(logging.DEBUG)
 
 
 @router.get("/", response_model=List[schemas.Post])
@@ -55,17 +53,11 @@ def get_post(
     db: Session = Depends(get_db),
     current_user: int = Depends(get_current_user),
 ):
-    # returned_post = db.query(models.Post).filter(models.Post.id == id).first()
     returned_post = db.query(models.Post).get(id)
     if not returned_post:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"post with id {id} was not found",
-        )
-    elif returned_post.owner_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"You are not authorized to access post {id}",
         )
     return returned_post
 

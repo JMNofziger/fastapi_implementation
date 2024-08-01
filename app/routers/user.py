@@ -2,12 +2,10 @@ from fastapi import status, HTTPException, Depends, APIRouter
 import models, schemas, utils
 from database import get_db
 from sqlalchemy.orm import Session
-import logging
+from config import logger
 
 # all method paths in this file begin with the prefix "users"
 router = APIRouter(prefix="/users", tags=["Users"])
-logger = logging.getLogger("uvicorn.error")
-logger.setLevel(logging.DEBUG)
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.UserOut)
