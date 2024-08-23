@@ -51,3 +51,9 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     id: Optional[str] = None
+
+
+# vote models
+class Vote(BaseModel):
+    post_id: int
+    direction: bool
