@@ -57,3 +57,11 @@ class TokenData(BaseModel):
 class Vote(BaseModel):
     post_id: int
     direction: bool
+
+
+class PostOut(BaseModel):
+    Post: Post
+    votes: int
+
+    class Config:
+        orm_mode = True

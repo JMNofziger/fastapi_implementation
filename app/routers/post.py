@@ -1,6 +1,7 @@
 from fastapi import Response, status, HTTPException, Depends, APIRouter
 from typing import List, Optional
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from database import get_db
 from oauth2 import get_current_user
 import schemas, models
@@ -10,7 +11,7 @@ from config import logger
 router = APIRouter(prefix="/posts", tags=["Posts"])
 
 
-@router.get("/", response_model=List[schemas.Post])
+@router.get("/", response_model=List[schemas.PostOut])
 def get_posts(
     db: Session = Depends(get_db),
     # current_user: int = Depends(get_current_user),
@@ -19,14 +20,18 @@ def get_posts(
     search: Optional[str] = "",
 ):
     # filter to only return posts which are owned by the requestor
-    # posts = db.query(models.Post).filter(models.Post.owner_id == current_user.id).all()
+    # create join based on the post_id between posts table and the votes table
+    # count the number of occurrences of votes for a post_id and label count as votes
     posts = (
-        db.query(models.Post)
+        db.query(models.Post, func.count(models.Vote.post_id).label("votes"))
+        .join(models.Vote, models.Vote.post_id == models.Post.id, isouter=True)
+        .group_by(models.Post.id)
         .filter(models.Post.title.contains(search))
         .limit(limit)
         .offset(skip)
         .all()
     )
+
     return posts
 
 
@@ -47,13 +52,21 @@ def create_posts(
     return new_post
 
 
-@router.get("/{id}", response_model=schemas.Post)
+@router.get("/{id}", response_model=schemas.PostOut)
 def get_post(
     id: int,
     db: Session = Depends(get_db),
     current_user: int = Depends(get_current_user),
 ):
-    returned_post = db.query(models.Post).get(id)
+
+    returned_post = (
+        db.query(models.Post, func.count(models.Vote.post_id).label("votes"))
+        .join(models.Vote, models.Vote.post_id == models.Post.id, isouter=True)
+        .group_by(models.Post.id)
+        .filter(models.Post.id == id)
+        .first()
+    )
+
     if not returned_post:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

@@ -6,7 +6,7 @@ uvicorn main:app --log-level debug --reload
 
 # Tutorial link
 https://www.youtube.com/watch?v=0sOvCWFmrtA
-9:21:00
+10:30:00
 
 # Differences between the `Pydantic` and SqlAlchemy Models
 
